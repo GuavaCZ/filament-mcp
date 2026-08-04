@@ -1,0 +1,11 @@
+.idea
+.phpunit.cache
+build
+composer.lock
+coverage
+phpunit.xml
+phpstan.neon
+vendor
+node_modules
+
+# testbench.yaml is intentionally tracked, it defines the panels the workbench boots.

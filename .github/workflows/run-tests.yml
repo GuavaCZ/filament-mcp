@@ -1,0 +1,127 @@
+name: run-tests
+
+on:
+  push:
+    branches:
+      - main
+      - '*.x'
+      - beta
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+        laravel: ['12.*', '13.*']
+        include:
+          - laravel: '12.*'
+            testbench: '10.*'
+          - laravel: '13.*'
+            testbench: '11.*'
+        exclude:
+          # Laravel 13 requires PHP 8.3+.
+          - laravel: '13.*'
+            php: '8.2'
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Setup problem matchers
+        run: |
+          echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+          echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
+
+      - name: List Installed Dependencies
+        run: composer show -D
+
+      - name: Execute tests
+        run: vendor/bin/pest --ci --no-coverage
+
+  # SQLite casts freely where Postgres raises type errors and MySQL coerces
+  # silently, so the suite runs against all three. One PHP/Laravel leg per
+  # driver is enough — driver behaviour does not vary across the rest of the
+  # matrix.
+  test-databases:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [pgsql, mysql]
+
+    name: DB ${{ matrix.db }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: testing
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_CONNECTION: ${{ matrix.db }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.db == 'pgsql' && '5432' || '3306' }}
+      DB_DATABASE: testing
+      DB_USERNAME: ${{ matrix.db == 'pgsql' && 'testing' || 'root' }}
+      DB_PASSWORD: password
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      - name: Execute tests
+        run: vendor/bin/pest --ci --no-coverage

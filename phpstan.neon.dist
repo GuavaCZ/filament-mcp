@@ -1,0 +1,39 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 4
+    paths:
+        - src
+        - config
+        - database
+    tmpDir: build/phpstan
+    checkOctaneCompatibility: true
+    checkModelProperties: true
+
+    ignoreErrors:
+        # Part of the public Testing namespace for users to opt into; nothing
+        # in the package itself uses it, so PHPStan sees it as unused.
+        -
+            identifier: trait.unused
+            path: src/Testing/TestsMcp.php
+        # Public helper trait for userland custom MCP tools (used by the
+        # workbench example); nothing in src/ uses it.
+        -
+            identifier: trait.unused
+            path: src/Concerns/InteractsWithFilamentContext.php
+        # Same: an opt-in trait for userland custom MCP tools, applied by the
+        # workbench example rather than by anything in src/.
+        -
+            identifier: trait.unused
+            path: src/Concerns/RequiresAuthentication.php
+        # Macro closures are rebound to the macroable instance at runtime;
+        # PHPStan types $this as the surrounding provider.
+        -
+            identifier: varTag.nativeType
+            path: src/FilamentMcpServiceProvider.php
+        # This IS a config file, but larastan only recognizes the app's config
+        # directory, not a package's — false positive for packages.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: config/filament-mcp.php
