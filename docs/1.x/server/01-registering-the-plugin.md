@@ -1,15 +1,12 @@
 ---
-title: Usage
+title: Registering the plugin
 ---
 
-# Usage
-
-## Register the plugin
+# Registering the plugin
 
 Add the `McpPlugin` to every panel you want to turn into an MCP server:
 
 ```php
-use Guava\FilamentMcp\Enums\McpOperation;
 use Guava\FilamentMcp\Mcp\McpResource;
 use Guava\FilamentMcp\McpPlugin;
 
@@ -31,9 +28,11 @@ public function panel(Panel $panel): Panel
 }
 ```
 
-That's already a working server. `->resources()` is where you list the resources you want to expose, each one wrapped in `McpResource` (more on configuring these in [resources](04-resources.md)). `->tokens()` registers a self-service page where users manage their own tokens, see [authentication](06-authentication.md).
+That's already a working server, served at `/mcp/{panel-id}`.
 
-The server is served at `/mcp/{panel-id}`, one server per panel.
+- `->instructions()` is handed to the agent when it connects. Use it for the things a tool description can't carry, like how your models relate to each other.
+- `->resources()` lists the resources you want to expose, each one wrapped in `McpResource`. See [exposing resources](../resources/01-exposing-resources.md).
+- `->tokens()` registers a self-service page where users manage their own tokens. See [tokens](../security/02-tokens.md).
 
 ## Create a token
 
@@ -53,3 +52,5 @@ claude mcp add --transport http acme https://your-app.test/mcp/admin \
 ```
 
 That's it, the agent now sees `list_posts`, `get_post`, `create_post`, `update_post`, `delete_post`, `list_categories` and `get_category`.
+
+Next up, [configuration](02-configuration.md).

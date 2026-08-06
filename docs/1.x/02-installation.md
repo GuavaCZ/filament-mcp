@@ -18,7 +18,7 @@ Install it via composer:
 composer require guava/filament-mcp
 ```
 
-Publish and run the migrations, they create the `mcp_tokens` table used for authentication and the `mcp_uploads` table used to stage [file uploads](10-files.md):
+Then publish and run the migrations. They create the `mcp_tokens` table used for authentication and the `mcp_uploads` table used to stage [file uploads](files/01-uploads.md):
 
 ```bash
 php artisan vendor:publish --tag="filament-mcp-migrations"
@@ -33,36 +33,14 @@ Publishing the config file is optional, you only need it if you want to change o
 php artisan vendor:publish --tag="filament-mcp-config"
 ```
 
-```php
-return [
-    'tokens' => [
-        'table' => 'mcp_tokens',
-        'prefix' => 'gmcp_',
-    ],
+Every option is documented in the file itself, and the ones worth knowing about are covered in [configuration](server/02-configuration.md).
 
-    // Staging area for out-of-band uploads. See the files chapter.
-    'uploads' => [
-        'table' => 'mcp_uploads',
-        'disk' => null, // null uses the default disk
-        'directory' => 'mcp-uploads',
-        'expires_after' => 60, // minutes a handle stays usable
-        'max_size' => 12288, // kilobytes
-    ],
+## Translations
 
-    // Guards for downloading a URL the agent supplied.
-    'remote_files' => [
-        'enabled' => true,
-        'allow_private_networks' => false,
-        'allowed_hosts' => [], // when set, an allowlist; supports "*"
-        'timeout' => 10,
-        'max_redirects' => 3,
-        'max_size' => 12288, // kilobytes
-    ],
+The strings used by the token management page are publishable too:
 
-    'rate_limit' => 60, // requests per minute per IP, null to disable
-    'local_panel' => env('FILAMENT_MCP_LOCAL_PANEL'),
-    'tenant_header' => 'X-Tenant',
-];
+```bash
+php artisan vendor:publish --tag="filament-mcp-translations"
 ```
 
-Next up, [register the plugin on your panel](03-usage.md).
+Next up, [register the plugin on your panel](server/01-registering-the-plugin.md).
